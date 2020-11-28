@@ -28,7 +28,11 @@ def catch_exceptions(cancel_on_failure=False):
     return catch_exceptions_decorator
 
 def extractFrames():
-    file = os.listdir('./assets/video')[0]
+    dir = os.listdir("./assets/video")
+    file = dir[0]
+    with open("./assets/vname","a+") as f:
+        f.seek(0)
+        f.write(file[:-8])
     videoFile = f"./assets/video/{file}"
     if not os.path.exists('./assets/frames'):
         os.mkdir('./assets/frames')
@@ -50,43 +54,68 @@ def extractFrames():
             x+=1
             cv2.imwrite(f"assets/frames/frame{int(x):06d}.jpg", image)
     vidcap.release()
+    if not os.path.exists(f"./assets/video_old"):
+        os.mkdir(f'./assets/video_old')
+    os.replace(videoFile, f'assets/video_old/{dir[0]}')
 
 @catch_exceptions()
 def post():
-    dir = os.listdir("./assets/frames")
-    dir.sort(key = lambda t : int(t[5:-4])) #forgot to sort the files before, pls forgive me lol
-    with open("./assets/retain","a+") as f:
-        f.seek(0)
-        filled = f.read(1)
-        if not filled:
-            totalFrames = str(len(dir))
-            f.write(totalFrames)
-        else:
-            f.seek(0)
-            totalFrames = str(f.readline())
+    if not os.path.exists(f"./assets/frames"):
+        os.mkdir(f'./assets/frames')
 
-    currentFrame = f'assets/frames/{dir[0]}'
-    currentFrameNumber = str(int(dir[0][5:-4]))
-    msg = f"Frame {currentFrameNumber} out of {str(totalFrames)}"
-    with open('assets/token.txt','r') as token:
-        accesstoken = token.readline()
-    graph = facebook.GraphAPI(accesstoken)
-    post_id = graph.put_photo(image=open(currentFrame, 'rb'),message = msg)['post_id']
-    print(f"Submitted post with title \"{msg}\" successfully!")
-    os.remove(currentFrame)
+    # post 15 frames each times
+    for i in range(15):
+        dir = os.listdir("./assets/frames")
+
+        # extract new frames when empty
+        if (len(dir)) == 0:
+            if os.path.exists("./assets/retain"):
+                os.remove("./assets/retain")
+            if os.path.exists("./assets/vname"):
+                os.remove("./assets/vname")
+            extractFrames()
+            dir = os.listdir("./assets/frames")
+
+        dir.sort(key = lambda t : int(t[5:-4])) #forgot to sort the files before, pls forgive me lol
+        with open("./assets/retain","a+") as f:
+            f.seek(0)
+            filled = f.read(1)
+            if not filled:
+                totalFrames = str(len(dir))
+                f.write(totalFrames)
+            else:
+                f.seek(0)
+                totalFrames = str(f.readline())
+
+        with open("./assets/vname","a+") as f:
+            f.seek(0)
+            vname = str(f.readline())
+
+        currentFrame = f'assets/frames/{dir[0]}'
+        currentFrameNumber = str(int(dir[0][5:-4]))
+        msg = f"{vname} - Frame {currentFrameNumber} out of {str(totalFrames)}"
+        with open('assets/token.txt','r') as token:
+            accesstoken = token.readline()
+        graph = facebook.GraphAPI(accesstoken)
+        post_id = graph.put_photo(image=open(currentFrame, 'rb'),message = msg)['post_id']
+        print(f"Submitted post with title \"{msg}\" successfully!")
+        # os.remove(currentFrame)
+        if not os.path.exists(f"./assets/frames_old/{vname}"):
+            os.mkdir(f'./assets/frames_old/{vname}')
+        os.replace(currentFrame, f'assets/frames_old/{vname}/{dir[0]}')
 
 if __name__ == '__main__':
     token = open('./assets/token.txt', 'r')
     if token.readline() == "putyourtokenherexdd":
         print("put your access token in assets/token.txt. you can obtain the access token from http://maxbots.ddns.net/token/")
         sys.exit("error no token")
-    ans = input("Extract Frames?(y/n) \n>")
-    if 'y' in ans.lower():
-        if os.path.exists("./assets/retain"):
-            os.remove("./assets/retain")
-        extractFrames()
-    else:
-        pass
+    # ans = input("Extract Frames?(y/n) \n>")
+    # if 'y' in ans.lower():
+    #     if os.path.exists("./assets/retain"):
+    #         os.remove("./assets/retain")
+    #     extractFrames()
+    # else:
+    #     pass
     schedule.every().hour.do(post).run()
 
     while 1:
