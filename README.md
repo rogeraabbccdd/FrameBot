@@ -9,7 +9,7 @@
 * ~~Head over to http://maxbots.ddns.net/token/ and get the access token for your page~~
 * [Checkout this tutorial](generateToken.md)
 * Copy the token and paste it in assets/token.txt
-* Place the video in assets/video
+* Place the video in assets/video, video file name must end with 3 numbers. e.g., `aaa_001.mp4`, `bbb_999.mp4`.
 * Open your Terminal/Powershell(as administrator)/Command Prompt(as administrator) in the main folder of this repository
 * Run `python3 main.py` or `sudo python3 main.py` if you are on a Mac/Linux
 * Enjoy!
